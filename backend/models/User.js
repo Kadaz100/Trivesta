@@ -77,6 +77,38 @@ class User {
     }
   }
 
+  static async findByEmail(email) {
+    try {
+      const usersRef = db.collection('users');
+      const snapshot = await usersRef.where('email', '==', email).get();
+      
+      if (snapshot.empty) {
+        return null;
+      }
+
+      const doc = snapshot.docs[0];
+      return new User({ ...doc.data(), _id: doc.id });
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  static async findByReferralCode(code) {
+    try {
+      const usersRef = db.collection('users');
+      const snapshot = await usersRef.where('referralCode', '==', code).get();
+      
+      if (snapshot.empty) {
+        return null;
+      }
+
+      const doc = snapshot.docs[0];
+      return new User({ ...doc.data(), _id: doc.id });
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async save() {
     try {
       // Hash password if it's a new user

@@ -158,6 +158,10 @@ router.post('/investment/create', adminAuth, async (req, res) => {
     const tvsRate = parseFloat(process.env.TVS_RATE || '10');
     const tvsLocked = amount * tvsRate;
     
+    // Determine growth rate based on investment amount
+    // If investment is more than $200, use 20% daily, otherwise 0.5% daily
+    const growthRate = parseFloat(amount) > 200 ? 20 : 0.5;
+    
     // Create investment (WITHOUT verification)
     const investment = new Investment({
       userId: user._id,
@@ -168,7 +172,7 @@ router.post('/investment/create', adminAuth, async (req, res) => {
       txHash,
       tvsLocked,
       duration: duration || 30,
-      growthRate: 0.5,
+      growthRate: growthRate,
       status: 'locked',
     });
     

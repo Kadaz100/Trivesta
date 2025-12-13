@@ -96,6 +96,10 @@ router.post('/', auth, async (req, res) => {
     // Get actual crypto amount from verification (already verified above)
     const cryptoAmount = verification.amount || amount;
 
+    // Determine growth rate based on investment amount
+    // If investment is more than $200, use 20% daily, otherwise 0.5% daily
+    const growthRate = parseFloat(amount) > 200 ? 20 : 0.5;
+
     // Create investment
     const investment = new Investment({
       userId: req.userId,
@@ -106,7 +110,7 @@ router.post('/', auth, async (req, res) => {
       txHash,
       tvsLocked,
       duration: investmentDuration,
-      growthRate: 0.5, // 0.5% daily
+      growthRate: growthRate,
       status: 'locked',
     });
 

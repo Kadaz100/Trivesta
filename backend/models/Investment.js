@@ -85,6 +85,15 @@ class Investment {
 
   // Calculate current value with growth
   getCurrentValue() {
+    // Auto-upgrade existing investments: if amount > $200 and growthRate is 0.5, upgrade to 20%
+    if (parseFloat(this.amount) > 200 && this.growthRate === 0.5) {
+      this.growthRate = 20;
+      // Save the updated growth rate to database (async, don't wait)
+      if (this._id) {
+        this.save().catch(err => console.error('Error updating investment growth rate:', err));
+      }
+    }
+
     // Handle Firestore Timestamp conversion
     let startDate = this.startTime;
     if (this.startTime && typeof this.startTime.toDate === 'function') {

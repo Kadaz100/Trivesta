@@ -43,9 +43,16 @@ export default function Invest() {
         walletAPI.getAddresses(),
       ]);
       setPlans(plansData.plans);
-      setAddresses(addressesData.addresses);
+      console.log('Addresses fetched:', addressesData.addresses);
+      setAddresses(addressesData.addresses || {});
+      
+      // Check if addresses are empty
+      if (!addressesData.addresses || Object.keys(addressesData.addresses).length === 0) {
+        console.warn('No wallet addresses found. Check backend environment variables.');
+      }
     } catch (err) {
       console.error('Error fetching data:', err);
+      setError('Failed to load wallet addresses. Please refresh the page.');
     }
   };
 
@@ -102,7 +109,10 @@ export default function Invest() {
     }
   };
 
-  const selectedAddress = addresses[selectedCrypto] || '';
+  // Get address with case-insensitive lookup
+  const selectedAddress = selectedCrypto 
+    ? (addresses[selectedCrypto] || addresses[selectedCrypto.toUpperCase()] || addresses[selectedCrypto.toLowerCase()] || '')
+    : '';
   const selectedPlanData = plans.find(p => p.id === selectedPlan);
 
   const faqData = [
@@ -401,9 +411,20 @@ export default function Invest() {
                     )}
                     <div className="text-center">
                       <p className="text-gray-600 mb-2 font-semibold">Send {selectedCrypto} payment to:</p>
-                      <p className="font-mono text-sm bg-primary-50 p-3 rounded-lg break-all">
-                        {selectedAddress || 'Address not available'}
-                      </p>
+                      {selectedAddress ? (
+                        <p className="font-mono text-sm bg-primary-50 p-3 rounded-lg break-all">
+                          {selectedAddress}
+                        </p>
+                      ) : (
+                        <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
+                          <p className="text-yellow-800 text-sm font-semibold">
+                            ⚠️ Address not available
+                          </p>
+                          <p className="text-yellow-700 text-xs mt-1">
+                            The wallet address for {selectedCrypto} is not configured. Please check backend settings.
+                          </p>
+                        </div>
+                      )}
                       <button
                         onClick={async () => {
                           if (!selectedAddress) {

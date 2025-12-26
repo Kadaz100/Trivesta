@@ -50,7 +50,45 @@ export default function Wallet() {
     const d = Math.floor(days);
     const h = Math.floor((days - d) * 24);
     const m = Math.floor(((days - d) * 24 - h) * 60);
-    return `${d}d ${h}h ${m}m`;
+    const s = Math.floor((((days - d) * 24 - h) * 60 - m) * 60);
+    return `${d}d ${h}h ${m}m ${s}s`;
+  };
+
+  // Live countdown timer component
+  const LiveTimer = ({ daysRemaining, startTime, duration }: { daysRemaining: number; startTime: any; duration: number }) => {
+    const [timeLeft, setTimeLeft] = useState(daysRemaining);
+    
+    useEffect(() => {
+      if (daysRemaining <= 0) {
+        setTimeLeft(0);
+        return;
+      }
+      
+      const interval = setInterval(() => {
+        // Recalculate time remaining
+        let startDate = startTime;
+        if (startTime && typeof startTime.toDate === 'function') {
+          startDate = startTime.toDate();
+        } else if (startTime && typeof startTime === 'object' && startTime._seconds) {
+          startDate = new Date(startTime._seconds * 1000);
+        } else {
+          startDate = new Date(startTime);
+        }
+        
+        const now = new Date();
+        const daysElapsed = (now - startDate) / (1000 * 60 * 60 * 24);
+        const remaining = Math.max(0, duration - daysElapsed);
+        setTimeLeft(remaining);
+      }, 1000); // Update every second
+      
+      return () => clearInterval(interval);
+    }, [daysRemaining, startTime, duration]);
+    
+    return (
+      <div className="text-lg font-bold text-primary-800">
+        {formatTime(timeLeft)}
+      </div>
+    );
   };
 
   const handleDeleteInvestment = async (investmentId: string) => {
@@ -261,9 +299,11 @@ export default function Wallet() {
                         </div>
                         <div>
                           <div className="text-gray-600 text-sm mb-1">Time Remaining</div>
-                          <div className="text-lg font-bold text-primary-800">
-                            {formatTime(investment.daysRemaining || 0)}
-                          </div>
+                          <LiveTimer 
+                            daysRemaining={investment.daysRemaining || 0}
+                            startTime={investment.startTime}
+                            duration={investment.duration || 0}
+                          />
                         </div>
                       </div>
                     </div>
@@ -321,17 +361,30 @@ export default function Wallet() {
                     </div>
                   </div>
                   {/* Action Buttons */}
-                  <div className="mt-4 flex justify-between items-center">
-                    <button
-                      onClick={() => handleWithdraw(investment)}
-                      className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
-                        investment.daysRemaining > 0
-                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                          : 'bg-gradient-to-r from-green-500 to-green-700 text-white hover:shadow-lg hover:scale-105'
-                      }`}
-                    >
-                      {investment.daysRemaining > 0 ? '🔒 Locked' : '💰 Withdraw TVS'}
-                    </button>
+                  <div className="mt-4 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+                    <div className="flex gap-3 flex-1">
+                      <button
+                        onClick={() => handleWithdraw(investment)}
+                        className={`flex-1 px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
+                          investment.daysRemaining > 0
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            : 'bg-gradient-to-r from-green-500 to-green-700 text-white hover:shadow-lg hover:scale-105'
+                        }`}
+                      >
+                        {investment.daysRemaining > 0 ? '🔒 Locked' : '💰 Withdraw TVS'}
+                      </button>
+                      {investment.daysRemaining <= 0 && (
+                        <button
+                          onClick={() => {
+                            alert('Gas fee calculation coming soon! This feature will be available when withdrawal is enabled.');
+                          }}
+                          className="px-4 py-3 bg-blue-100 text-blue-700 rounded-xl font-semibold hover:bg-blue-200 transition-all duration-300 border-2 border-blue-300"
+                          title="Gas fee information"
+                        >
+                          ⛽ Gas Fee
+                        </button>
+                      )}
+                    </div>
                     {!investment.isConsolidated && (
                       <button
                         onClick={() => handleDeleteInvestment(investment._id)}

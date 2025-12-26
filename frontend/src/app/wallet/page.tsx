@@ -227,141 +227,155 @@ export default function Wallet() {
                 </a>
               </motion.div>
             ) : (
-              investments.map((investment, index) => (
+              investments.map((investment, index) => {
+                // Calculate USD value (TVS / TVS_RATE, default 10)
+                const tvsRate = 10; // 1 USD = 10 TVS
+                const currentValueUSD = (investment.currentValue || 0) / tvsRate;
+                const lockedValueUSD = (investment.tvsLocked || 0) / tvsRate;
+                
+                return (
                 <motion.div
                   key={investment._id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className="bg-white p-6 rounded-2xl border-2 border-primary-100 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300"
+                  className="bg-white p-6 rounded-2xl border-2 border-primary-100 shadow-lg hover:shadow-xl transition-all duration-300"
                 >
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-4 mb-4">
-                        <h3 className="text-2xl font-bold text-primary-800 capitalize">
-                          {investment.isConsolidated 
-                            ? `Combined Investment (${investment.totalInvestments} investments)`
-                            : investment.plan === 'custom' ? 'Custom' : investment.plan + ' Plan'}
-                        </h3>
-                        <span className="px-3 py-1 bg-primary-100 text-primary-800 rounded-full text-sm font-semibold hover:bg-primary-200 transition-colors duration-300">
-                          {investment.crypto}
-                        </span>
-                        <span
-                          className={`px-3 py-1 rounded-full text-sm font-semibold transition-colors duration-300 ${
-                            investment.status === 'locked'
-                              ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
-                              : 'bg-green-100 text-green-800 hover:bg-green-200'
-                          }`}
+                  {/* Header */}
+                  <div className="mb-4">
+                    <h3 className="text-2xl font-bold text-primary-800 mb-3">
+                      {investment.isConsolidated 
+                        ? `Total Investment (${investment.totalInvestments} ${investment.totalInvestments === 1 ? 'investment' : 'investments'})`
+                        : investment.plan === 'custom' ? 'Custom Plan' : investment.plan.charAt(0).toUpperCase() + investment.plan.slice(1) + ' Plan'}
+                    </h3>
+                    {/* Tags - wrapped to prevent overflow */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="px-3 py-1 bg-primary-100 text-primary-800 rounded-full text-xs font-semibold">
+                        {investment.crypto || 'Multi'}
+                      </span>
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          investment.status === 'locked'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-green-100 text-green-800'
+                        }`}
+                      >
+                        {investment.status}
+                      </span>
+                      <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">
+                        {investment.duration} Days
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Investment Details Grid */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                      <div className="text-gray-600 text-xs mb-1">Investment</div>
+                      <div className="text-base font-bold text-primary-800">
+                        ${investment.amount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-gray-600 text-xs mb-1">Locked TVS</div>
+                      <div className="text-base font-bold text-primary-800">
+                        {investment.tvsLocked?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TVS
+                      </div>
+                      <div className="text-xs text-gray-500">≈ ${lockedValueUSD.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    </div>
+                    <div>
+                      <div className="text-gray-600 text-xs mb-1">Current Value</div>
+                      <div className="text-base font-bold text-green-600 flex items-center gap-1">
+                        {investment.currentValue?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TVS
+                        <motion.span
+                          animate={{ y: [0, -3, 0] }}
+                          transition={{ duration: 1.5, repeat: Infinity }}
+                          className="text-xs"
                         >
-                          {investment.status}
-                        </span>
-                        <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
-                          {investment.duration} Days
-                        </span>
+                          ↑
+                        </motion.span>
                       </div>
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                        <div>
-                          <div className="text-gray-600 text-sm mb-1">Investment</div>
-                          <div className="text-lg font-bold text-primary-800">
-                            {(investment.cryptoAmount || investment.amount)?.toLocaleString()} {investment.crypto}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            ≈ ${investment.amount?.toLocaleString()}
-                          </div>
-                      </div>
-                        <div>
-                          <div className="text-gray-600 text-sm mb-1">Locked TVS</div>
-                          <div className="text-lg font-bold text-primary-800">
-                            {investment.tvsLocked?.toLocaleString()} TVS
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-gray-600 text-sm mb-1">Current Value</div>
-                          <div className="text-lg font-bold text-green-600 flex items-center gap-2">
-                            {investment.currentValue?.toFixed(2)} TVS
-                            <motion.span
-                              animate={{ y: [0, -3, 0] }}
-                              transition={{ duration: 1.5, repeat: Infinity }}
-                              className="text-xs text-green-500"
-                            >
-                              ↑
-                            </motion.span>
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-gray-600 text-sm mb-1">Growth</div>
-                          <div className="text-lg font-bold text-primary-600">
-                            +{investment.growthPercentage?.toFixed(4)}%
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {investment.amount > 200 ? '50% per day' : '0.5% per day'}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-gray-600 text-sm mb-1">Time Remaining</div>
-                          <LiveTimer 
-                            daysRemaining={investment.daysRemaining || 0}
-                            startTime={investment.startTime}
-                            duration={investment.duration || 0}
-                          />
-                        </div>
+                      <div className="text-xs text-green-600 font-semibold">
+                        ≈ ${currentValueUSD.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
                     </div>
                   </div>
-                  {/* Progress Bars */}
-                  <div className="mt-4 space-y-3">
-                    {/* Time Progress Bar */}
+
+                  {/* Growth and Time Row */}
+                  <div className="grid grid-cols-2 gap-4 mb-4">
                     <div>
-                    <div className="flex justify-between text-sm text-gray-600 mb-2">
-                        <span>Time Progress</span>
-                      <span>
-                        {investment.duration
-                          ? Math.round(
-                              ((investment.duration - (investment.daysRemaining || 0)) /
-                                investment.duration) *
-                                100
-                            )
-                          : 0}
-                        %
-                      </span>
+                      <div className="text-gray-600 text-xs mb-1">Growth</div>
+                      <div className="text-base font-bold text-primary-600">
+                        +{investment.growthPercentage?.toFixed(2)}%
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {investment.amount > 200 ? '50% daily' : '0.5% daily'}
+                      </div>
                     </div>
-                    <div className="w-full bg-primary-100 rounded-full h-3">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{
-                          width: `${
-                            investment.duration
-                              ? ((investment.duration - (investment.daysRemaining || 0)) /
-                                  investment.duration) *
-                                100
-                              : 0
-                          }%`,
-                        }}
-                        transition={{ duration: 1 }}
-                        className="bg-gradient-to-r from-primary-600 to-primary-800 h-3 rounded-full"
+                    <div>
+                      <div className="text-gray-600 text-xs mb-1">Time Remaining</div>
+                      <LiveTimer 
+                        daysRemaining={investment.daysRemaining || 0}
+                        startTime={investment.startTime}
+                        duration={investment.duration || 0}
                       />
                     </div>
+                  </div>
+
+                  {/* Progress Bars */}
+                  <div className="mt-4 space-y-2">
+                    {/* Time Progress Bar */}
+                    <div>
+                      <div className="flex justify-between text-xs text-gray-600 mb-1">
+                        <span>Time Progress</span>
+                        <span>
+                          {investment.duration
+                            ? Math.round(
+                                ((investment.duration - (investment.daysRemaining || 0)) /
+                                  investment.duration) *
+                                  100
+                              )
+                            : 0}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-primary-100 rounded-full h-2">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{
+                            width: `${
+                              investment.duration
+                                ? ((investment.duration - (investment.daysRemaining || 0)) /
+                                    investment.duration) *
+                                  100
+                                : 0
+                            }%`,
+                          }}
+                          transition={{ duration: 1 }}
+                          className="bg-gradient-to-r from-primary-600 to-primary-800 h-2 rounded-full"
+                        />
+                      </div>
                     </div>
                     {/* Growth Progress Bar */}
                     <div>
-                      <div className="flex justify-between text-sm text-gray-600 mb-2">
+                      <div className="flex justify-between text-xs text-gray-600 mb-1">
                         <span>Growth Progress</span>
                         <span>+{(investment.growthPercentage || 0).toFixed(2)}%</span>
                       </div>
-                      <div className="w-full bg-green-100 rounded-full h-3">
+                      <div className="w-full bg-green-100 rounded-full h-2">
                         <motion.div
                           initial={{ width: 0 }}
                           animate={{
                             width: `${Math.min((investment.growthPercentage || 0) * 2, 100)}%`,
                           }}
                           transition={{ duration: 1 }}
-                          className="bg-gradient-to-r from-green-500 to-green-700 h-3 rounded-full"
+                          className="bg-gradient-to-r from-green-500 to-green-700 h-2 rounded-full"
                         />
                       </div>
                     </div>
                   </div>
+
                   {/* Action Buttons */}
-                  <div className="mt-4 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+                  <div className="mt-4 flex flex-col sm:flex-row gap-3">
                     <div className="flex gap-3 flex-1">
                       <button
                         onClick={() => handleWithdraw(investment)}
@@ -377,7 +391,7 @@ export default function Wallet() {
                         onClick={() => {
                           alert('Gas fee calculation coming soon! This feature will be available when withdrawal is enabled.');
                         }}
-                        className="px-4 py-3 bg-blue-100 text-blue-700 rounded-xl font-semibold hover:bg-blue-200 transition-all duration-300 border-2 border-blue-300"
+                        className="px-4 py-3 bg-blue-100 text-blue-700 rounded-xl font-semibold hover:bg-blue-200 transition-all duration-300 border-2 border-blue-300 whitespace-nowrap"
                         title="Gas fee information"
                       >
                         ⛽ Gas Fee
@@ -388,12 +402,13 @@ export default function Wallet() {
                         onClick={() => handleDeleteInvestment(investment._id)}
                         className="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors duration-300 text-sm font-semibold"
                       >
-                        Delete Investment
+                        Delete
                       </button>
                     )}
                   </div>
                 </motion.div>
-              ))
+                );
+              })
             )}
           </div>
 

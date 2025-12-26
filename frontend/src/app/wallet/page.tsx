@@ -66,17 +66,19 @@ export default function Wallet() {
       
       const interval = setInterval(() => {
         // Recalculate time remaining
-        let startDate = startTime;
+        let startDate: Date;
         if (startTime && typeof startTime.toDate === 'function') {
           startDate = startTime.toDate();
         } else if (startTime && typeof startTime === 'object' && startTime._seconds) {
           startDate = new Date(startTime._seconds * 1000);
+        } else if (startTime instanceof Date) {
+          startDate = startTime;
         } else {
           startDate = new Date(startTime);
         }
         
         const now = new Date();
-        const daysElapsed = (now - startDate) / (1000 * 60 * 60 * 24);
+        const daysElapsed = (now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
         const remaining = Math.max(0, duration - daysElapsed);
         setTimeLeft(remaining);
       }, 1000); // Update every second
@@ -85,7 +87,7 @@ export default function Wallet() {
     }, [daysRemaining, startTime, duration]);
     
     return (
-      <div className="text-lg font-bold text-primary-800">
+      <div className="text-base font-bold text-primary-800">
         {formatTime(timeLeft)}
       </div>
     );

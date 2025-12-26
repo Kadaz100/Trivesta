@@ -13,6 +13,7 @@ export default function Wallet() {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [referralCode, setReferralCode] = useState<string>('');
+  const [referralCopied, setReferralCopied] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -382,17 +383,51 @@ export default function Wallet() {
                         className="flex-1 bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-white/50"
                       />
                       <button
-                        onClick={() => {
-                          if (referralCode) {
-                            const link = `${typeof window !== 'undefined' ? window.location.origin : ''}/?ref=${referralCode}`;
-                            navigator.clipboard.writeText(link);
-                            alert('Referral link copied to clipboard!');
+                        onClick={async () => {
+                          if (!referralCode) return;
+                          
+                          const link = `${typeof window !== 'undefined' ? window.location.origin : ''}/?ref=${referralCode}`;
+                          
+                          try {
+                            // Try modern clipboard API first
+                            if (navigator.clipboard && navigator.clipboard.writeText) {
+                              await navigator.clipboard.writeText(link);
+                              setReferralCopied(true);
+                              setTimeout(() => setReferralCopied(false), 2000);
+                            } else {
+                              // Fallback for older browsers
+                              const textArea = document.createElement('textarea');
+                              textArea.value = link;
+                              textArea.style.position = 'fixed';
+                              textArea.style.left = '-999999px';
+                              textArea.style.top = '-999999px';
+                              document.body.appendChild(textArea);
+                              textArea.focus();
+                              textArea.select();
+                              
+                              try {
+                                document.execCommand('copy');
+                                setReferralCopied(true);
+                                setTimeout(() => setReferralCopied(false), 2000);
+                              } catch (err) {
+                                alert('Failed to copy. Please copy manually: ' + link);
+                              }
+                              
+                              document.body.removeChild(textArea);
+                            }
+                          } catch (err) {
+                            console.error('Failed to copy:', err);
+                            alert('Failed to copy. Please copy manually: ' + link);
                           }
                         }}
                         disabled={!referralCode}
-                        className="px-4 py-2 bg-white text-primary-800 rounded-lg font-semibold hover:bg-primary-50 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
+                          referralCopied
+                            ? 'bg-green-500 text-white'
+                            : 'bg-white text-primary-800 hover:bg-primary-50'
+                        }`}
                       >
-                        Copy
+                        {referralCopied ? '✓ Copied!' : 'Copy'}
                       </button>
                     </div>
                     {referralCode && (

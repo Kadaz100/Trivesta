@@ -26,6 +26,7 @@ export default function Invest() {
   const [error, setError] = useState('');
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -404,10 +405,51 @@ export default function Invest() {
                         {selectedAddress || 'Address not available'}
                       </p>
                       <button
-                        onClick={() => navigator.clipboard.writeText(selectedAddress)}
-                        className="mt-2 text-primary-600 hover:text-primary-800 text-sm font-medium"
+                        onClick={async () => {
+                          if (!selectedAddress) {
+                            alert('Address not available');
+                            return;
+                          }
+                          
+                          try {
+                            // Try modern clipboard API first
+                            if (navigator.clipboard && navigator.clipboard.writeText) {
+                              await navigator.clipboard.writeText(selectedAddress);
+                              setCopied(true);
+                              setTimeout(() => setCopied(false), 2000);
+                            } else {
+                              // Fallback for older browsers
+                              const textArea = document.createElement('textarea');
+                              textArea.value = selectedAddress;
+                              textArea.style.position = 'fixed';
+                              textArea.style.left = '-999999px';
+                              textArea.style.top = '-999999px';
+                              document.body.appendChild(textArea);
+                              textArea.focus();
+                              textArea.select();
+                              
+                              try {
+                                document.execCommand('copy');
+                                setCopied(true);
+                                setTimeout(() => setCopied(false), 2000);
+                              } catch (err) {
+                                alert('Failed to copy. Please copy manually: ' + selectedAddress);
+                              }
+                              
+                              document.body.removeChild(textArea);
+                            }
+                          } catch (err) {
+                            console.error('Failed to copy:', err);
+                            alert('Failed to copy. Please copy manually: ' + selectedAddress);
+                          }
+                        }}
+                        className={`mt-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+                          copied
+                            ? 'bg-green-100 text-green-700 border-2 border-green-300'
+                            : 'bg-primary-100 text-primary-700 hover:bg-primary-200 border-2 border-primary-200'
+                        }`}
                       >
-                        📋 Copy Address
+                        {copied ? '✓ Copied!' : '📋 Copy Address'}
                       </button>
                     </div>
                     <div>

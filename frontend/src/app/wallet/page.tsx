@@ -373,17 +373,15 @@ export default function Wallet() {
                       >
                         {investment.daysRemaining > 0 ? '🔒 Locked' : '💰 Withdraw TVS'}
                       </button>
-                      {investment.daysRemaining <= 0 && (
-                        <button
-                          onClick={() => {
-                            alert('Gas fee calculation coming soon! This feature will be available when withdrawal is enabled.');
-                          }}
-                          className="px-4 py-3 bg-blue-100 text-blue-700 rounded-xl font-semibold hover:bg-blue-200 transition-all duration-300 border-2 border-blue-300"
-                          title="Gas fee information"
-                        >
-                          ⛽ Gas Fee
-                        </button>
-                      )}
+                      <button
+                        onClick={() => {
+                          alert('Gas fee calculation coming soon! This feature will be available when withdrawal is enabled.');
+                        }}
+                        className="px-4 py-3 bg-blue-100 text-blue-700 rounded-xl font-semibold hover:bg-blue-200 transition-all duration-300 border-2 border-blue-300"
+                        title="Gas fee information"
+                      >
+                        ⛽ Gas Fee
+                      </button>
                     </div>
                     {!investment.isConsolidated && (
                       <button

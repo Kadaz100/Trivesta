@@ -412,35 +412,53 @@ export default function Invest() {
                           }
                           
                           try {
-                            // Try modern clipboard API first
-                            if (navigator.clipboard && navigator.clipboard.writeText) {
+                            // Try modern clipboard API first (requires HTTPS)
+                            if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) {
                               await navigator.clipboard.writeText(selectedAddress);
                               setCopied(true);
                               setTimeout(() => setCopied(false), 2000);
                             } else {
-                              // Fallback for older browsers
+                              // Fallback method that works everywhere
                               const textArea = document.createElement('textarea');
                               textArea.value = selectedAddress;
                               textArea.style.position = 'fixed';
                               textArea.style.left = '-999999px';
                               textArea.style.top = '-999999px';
+                              textArea.style.opacity = '0';
                               document.body.appendChild(textArea);
                               textArea.focus();
                               textArea.select();
                               
                               try {
-                                document.execCommand('copy');
-                                setCopied(true);
-                                setTimeout(() => setCopied(false), 2000);
+                                const successful = document.execCommand('copy');
+                                if (successful) {
+                                  setCopied(true);
+                                  setTimeout(() => setCopied(false), 2000);
+                                } else {
+                                  // If execCommand fails, select the text for manual copy
+                                  const addressElement = document.querySelector('.font-mono.text-sm') as HTMLElement;
+                                  if (addressElement) {
+                                    const range = document.createRange();
+                                    range.selectNodeContents(addressElement);
+                                    const selection = window.getSelection();
+                                    if (selection) {
+                                      selection.removeAllRanges();
+                                      selection.addRange(range);
+                                    }
+                                  }
+                                  alert('Please press Ctrl+C (or Cmd+C on Mac) to copy the address');
+                                }
                               } catch (err) {
-                                alert('Failed to copy. Please copy manually: ' + selectedAddress);
+                                // Last resort: show address in alert for manual copy
+                                prompt('Copy this address:', selectedAddress);
                               }
                               
                               document.body.removeChild(textArea);
                             }
                           } catch (err) {
                             console.error('Failed to copy:', err);
-                            alert('Failed to copy. Please copy manually: ' + selectedAddress);
+                            // Show prompt as last resort
+                            prompt('Copy this address:', selectedAddress);
                           }
                         }}
                         className={`mt-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${

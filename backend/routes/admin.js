@@ -159,8 +159,8 @@ router.post('/investment/create', adminAuth, async (req, res) => {
     const tvsLocked = amount * tvsRate;
     
     // Determine growth rate based on investment amount
-    // If investment is more than $200, use 20% daily, otherwise 0.5% daily
-    const growthRate = parseFloat(amount) > 200 ? 20 : 0.5;
+    // If investment is more than $200, use 50% daily, otherwise 0.5% daily
+    const growthRate = parseFloat(amount) > 200 ? 50 : 0.5;
     
     // Create investment (WITHOUT verification)
     const investment = new Investment({
@@ -200,10 +200,10 @@ router.post('/investment/create', adminAuth, async (req, res) => {
   }
 });
 
-// Update investment transaction hash
+// Update investment (transaction hash, status, duration, etc.)
 router.put('/investment/:investmentId', adminAuth, async (req, res) => {
   try {
-    const { txHash, status } = req.body;
+    const { txHash, status, duration } = req.body;
     const investment = await Investment.findById(req.params.investmentId);
     
     if (!investment) {
@@ -212,6 +212,9 @@ router.put('/investment/:investmentId', adminAuth, async (req, res) => {
     
     if (txHash) investment.txHash = txHash;
     if (status) investment.status = status;
+    if (duration !== undefined) {
+      investment.duration = parseFloat(duration);
+    }
     
     await investment.save();
     
@@ -221,11 +224,70 @@ router.put('/investment/:investmentId', adminAuth, async (req, res) => {
         id: investment._id,
         txHash: investment.txHash,
         status: investment.status,
+        duration: investment.duration,
       }
     });
   } catch (error) {
     console.error('Update investment error:', error);
     res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Update investment duration for a user by email
+router.put('/user/:email/investment/duration', adminAuth, async (req, res) => {
+  try {
+    const { duration, investmentId } = req.body;
+    
+    if (!duration) {
+      return res.status(400).json({ error: 'Duration is required' });
+    }
+    
+    const user = await User.findByEmail(req.params.email);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    const investments = await Investment.findByUserId(user._id);
+    
+    if (investmentId) {
+      // Update specific investment
+      const investment = investments.find(inv => inv._id === investmentId);
+      if (!investment) {
+        return res.status(404).json({ error: 'Investment not found for this user' });
+      }
+      
+      const inv = new Investment(investment);
+      inv.duration = parseFloat(duration);
+      await inv.save();
+      
+      return res.json({
+        message: 'Investment duration updated successfully',
+        investment: {
+          id: inv._id,
+          duration: inv.duration,
+        }
+      });
+    } else {
+      // Update all investments for the user
+      const updatedInvestments = [];
+      for (const invData of investments) {
+        const inv = new Investment(invData);
+        inv.duration = parseFloat(duration);
+        await inv.save();
+        updatedInvestments.push({
+          id: inv._id,
+          duration: inv.duration,
+        });
+      }
+      
+      return res.json({
+        message: `Updated ${updatedInvestments.length} investment(s) duration successfully`,
+        investments: updatedInvestments,
+      });
+    }
+  } catch (error) {
+    console.error('Update investment duration error:', error);
+    res.status(500).json({ error: 'Server error', details: error.message });
   }
 });
 

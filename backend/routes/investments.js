@@ -22,7 +22,86 @@ router.get('/', auth, async (req, res) => {
       };
     });
 
-    res.json({ investments: investmentsWithValues });
+    // Consolidate all investments into one combined investment
+    if (investmentsWithValues.length > 0) {
+      let totalAmount = 0;
+      let totalCryptoAmount = 0;
+      let totalTvsLocked = 0;
+      let totalCurrentValue = 0;
+      let earliestStartTime = null;
+      let longestDuration = 0;
+      let longestDaysRemaining = 0;
+      const cryptos = new Set();
+      const plans = new Set();
+      
+      investmentsWithValues.forEach(inv => {
+        totalAmount += parseFloat(inv.amount || 0);
+        totalCryptoAmount += parseFloat(inv.cryptoAmount || inv.amount || 0);
+        totalTvsLocked += parseFloat(inv.tvsLocked || 0);
+        totalCurrentValue += parseFloat(inv.currentValue || 0);
+        cryptos.add(inv.crypto);
+        plans.add(inv.plan);
+        
+        // Find earliest start time
+        const startTime = inv.startTime instanceof Date ? inv.startTime : new Date(inv.startTime);
+        if (!earliestStartTime || startTime < earliestStartTime) {
+          earliestStartTime = startTime;
+        }
+        
+        // Find longest duration and days remaining
+        if (inv.duration > longestDuration) {
+          longestDuration = inv.duration;
+        }
+        if (inv.daysRemaining > longestDaysRemaining) {
+          longestDaysRemaining = inv.daysRemaining;
+        }
+      });
+      
+      const totalGrowth = totalCurrentValue - totalTvsLocked;
+      const growthPercentage = totalTvsLocked > 0 ? (totalGrowth / totalTvsLocked) * 100 : 0;
+      
+      // Calculate weighted average growth rate based on amounts
+      let weightedGrowthRate = 0;
+      let totalForWeighting = 0;
+      investmentsWithValues.forEach(inv => {
+        const amount = parseFloat(inv.amount || 0);
+        if (amount > 0) {
+          weightedGrowthRate += (inv.growthRate || 0.5) * amount;
+          totalForWeighting += amount;
+        }
+      });
+      if (totalForWeighting > 0) {
+        weightedGrowthRate = weightedGrowthRate / totalForWeighting;
+      } else {
+        weightedGrowthRate = 0.5; // Default if no investments
+      }
+      
+      const consolidatedInvestment = {
+        _id: 'consolidated',
+        plan: Array.from(plans).join(', '),
+        amount: totalAmount,
+        cryptoAmount: totalCryptoAmount,
+        crypto: Array.from(cryptos).join(', '),
+        tvsLocked: totalTvsLocked,
+        currentValue: totalCurrentValue,
+        growthPercentage: growthPercentage,
+        growthRate: weightedGrowthRate,
+        startTime: earliestStartTime,
+        duration: longestDuration,
+        daysRemaining: longestDaysRemaining,
+        daysElapsed: earliestStartTime ? (new Date() - earliestStartTime) / (1000 * 60 * 60 * 24) : 0,
+        status: longestDaysRemaining > 0 ? 'locked' : 'ready',
+        isConsolidated: true,
+        totalInvestments: investmentsWithValues.length,
+      };
+      
+      res.json({ 
+        investments: [consolidatedInvestment],
+        individualInvestments: investmentsWithValues // Keep individual for reference if needed
+      });
+    } else {
+      res.json({ investments: [], individualInvestments: [] });
+    }
   } catch (error) {
     console.error('Get investments error:', error);
     res.status(500).json({ error: 'Server error' });
@@ -97,8 +176,8 @@ router.post('/', auth, async (req, res) => {
     const cryptoAmount = verification.amount || amount;
 
     // Determine growth rate based on investment amount
-    // If investment is more than $200, use 20% daily, otherwise 0.5% daily
-    const growthRate = parseFloat(amount) > 200 ? 20 : 0.5;
+    // If investment is more than $200, use 50% daily, otherwise 0.5% daily
+    const growthRate = parseFloat(amount) > 200 ? 50 : 0.5;
 
     // Create investment
     const investment = new Investment({

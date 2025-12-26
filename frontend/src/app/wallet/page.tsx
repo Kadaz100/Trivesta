@@ -150,7 +150,9 @@ export default function Wallet() {
                   +{(stats.growthPercentage || 0).toFixed(4)}%
                 </div>
                 <div className="text-sm text-gray-500 mt-1">
-                  0.5% daily
+                  {stats?.totalLocked > 0 && investments.length > 0 && investments[0]?.amount > 200 
+                    ? '50% daily' 
+                    : '0.5% daily'}
                 </div>
               </motion.div>
               <motion.div
@@ -198,7 +200,9 @@ export default function Wallet() {
                     <div className="flex-1">
                       <div className="flex items-center gap-4 mb-4">
                         <h3 className="text-2xl font-bold text-primary-800 capitalize">
-                          {investment.plan === 'custom' ? 'Custom' : investment.plan} Plan
+                          {investment.isConsolidated 
+                            ? `Combined Investment (${investment.totalInvestments} investments)`
+                            : investment.plan === 'custom' ? 'Custom' : investment.plan + ' Plan'}
                         </h3>
                         <span className="px-3 py-1 bg-primary-100 text-primary-800 rounded-full text-sm font-semibold hover:bg-primary-200 transition-colors duration-300">
                           {investment.crypto}
@@ -225,7 +229,7 @@ export default function Wallet() {
                           <div className="text-xs text-gray-500">
                             ≈ ${investment.amount?.toLocaleString()}
                           </div>
-                        </div>
+                      </div>
                         <div>
                           <div className="text-gray-600 text-sm mb-1">Locked TVS</div>
                           <div className="text-lg font-bold text-primary-800">
@@ -251,7 +255,7 @@ export default function Wallet() {
                             +{investment.growthPercentage?.toFixed(4)}%
                           </div>
                           <div className="text-xs text-gray-500">
-                            0.5% per day
+                            {investment.amount > 200 ? '50% per day' : '0.5% per day'}
                           </div>
                         </div>
                         <div>
@@ -267,35 +271,35 @@ export default function Wallet() {
                   <div className="mt-4 space-y-3">
                     {/* Time Progress Bar */}
                     <div>
-                      <div className="flex justify-between text-sm text-gray-600 mb-2">
+                    <div className="flex justify-between text-sm text-gray-600 mb-2">
                         <span>Time Progress</span>
-                        <span>
-                          {investment.duration
-                            ? Math.round(
-                                ((investment.duration - (investment.daysRemaining || 0)) /
+                      <span>
+                        {investment.duration
+                          ? Math.round(
+                              ((investment.duration - (investment.daysRemaining || 0)) /
+                                investment.duration) *
+                                100
+                            )
+                          : 0}
+                        %
+                      </span>
+                    </div>
+                    <div className="w-full bg-primary-100 rounded-full h-3">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{
+                          width: `${
+                            investment.duration
+                              ? ((investment.duration - (investment.daysRemaining || 0)) /
                                   investment.duration) *
-                                  100
-                              )
-                            : 0}
-                          %
-                        </span>
-                      </div>
-                      <div className="w-full bg-primary-100 rounded-full h-3">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{
-                            width: `${
-                              investment.duration
-                                ? ((investment.duration - (investment.daysRemaining || 0)) /
-                                    investment.duration) *
-                                  100
-                                : 0
-                            }%`,
-                          }}
-                          transition={{ duration: 1 }}
-                          className="bg-gradient-to-r from-primary-600 to-primary-800 h-3 rounded-full"
-                        />
-                      </div>
+                                100
+                              : 0
+                          }%`,
+                        }}
+                        transition={{ duration: 1 }}
+                        className="bg-gradient-to-r from-primary-600 to-primary-800 h-3 rounded-full"
+                      />
+                    </div>
                     </div>
                     {/* Growth Progress Bar */}
                     <div>
@@ -327,12 +331,14 @@ export default function Wallet() {
                     >
                       {investment.daysRemaining > 0 ? '🔒 Locked' : '💰 Withdraw TVS'}
                     </button>
-                    <button
-                      onClick={() => handleDeleteInvestment(investment._id)}
-                      className="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors duration-300 text-sm font-semibold"
-                    >
-                      Delete Investment
-                    </button>
+                    {!investment.isConsolidated && (
+                      <button
+                        onClick={() => handleDeleteInvestment(investment._id)}
+                        className="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors duration-300 text-sm font-semibold"
+                      >
+                        Delete Investment
+                      </button>
+                    )}
                   </div>
                 </motion.div>
               ))

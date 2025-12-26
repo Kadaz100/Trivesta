@@ -227,6 +227,35 @@
             <button class="btn btn-success" onclick="createInvestment()">Create Investment (Skip Verification)</button>
             <div id="investResult" class="result" style="display: none;"></div>
         </div>
+
+        <!-- Update Investment Duration -->
+        <div class="section">
+            <h2 class="section-title">⏱️ Update Investment Duration</h2>
+            <p style="color: #666; margin-bottom: 15px; font-size: 14px;">
+                Change how long a user's investment is locked. For example, change from 30 days to 14 days.
+            </p>
+            <div class="input-group">
+                <label>User Email:</label>
+                <input type="email" id="updateDurationEmail" placeholder="user@example.com">
+            </div>
+            <div class="input-group">
+                <label>New Duration (days):</label>
+                <input type="number" id="updateDurationDays" placeholder="14" min="1">
+                <small style="color: #666; display: block; margin-top: 5px;">
+                    Enter the number of days (e.g., 14 for 14 days, 30 for 30 days)
+                </small>
+            </div>
+            <div class="input-group">
+                <label>Investment ID (Optional):</label>
+                <input type="text" id="updateDurationInvestmentId" placeholder="Leave empty to update ALL investments">
+                <small style="color: #666; display: block; margin-top: 5px;">
+                    If you leave this empty, it will update ALL investments for this user. 
+                    If you enter an ID, it will only update that specific investment.
+                </small>
+            </div>
+            <button class="btn btn-warning" onclick="updateInvestmentDuration()">Update Duration</button>
+            <div id="updateDurationResult" class="result" style="display: none;"></div>
+        </div>
     </div>
 
     <script>
@@ -497,6 +526,58 @@
                 document.getElementById('investDuration').value = '';
             } catch (error) {
                 resultDiv.innerHTML = `<div class="error">${error.message}</div>`;
+            }
+        }
+
+        async function updateInvestmentDuration() {
+            const email = document.getElementById('updateDurationEmail').value;
+            const duration = document.getElementById('updateDurationDays').value;
+            const investmentId = document.getElementById('updateDurationInvestmentId').value;
+            const resultDiv = document.getElementById('updateDurationResult');
+
+            if (!email || !duration) {
+                alert('Please enter user email and duration');
+                return;
+            }
+
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<p>Updating investment duration...</p>';
+
+            try {
+                const body = {
+                    duration: parseFloat(duration)
+                };
+                
+                // Add investment ID if provided
+                if (investmentId && investmentId.trim() !== '') {
+                    body.investmentId = investmentId.trim();
+                }
+
+                const response = await fetch(`${API_URL}/user/${encodeURIComponent(email)}/investment/duration`, {
+                    method: 'PUT',
+                    headers: getHeaders(),
+                    body: JSON.stringify(body)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || data.details || 'Failed to update duration');
+                }
+
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h3>✓ Duration Updated Successfully!</h3>
+                        <p><strong>Message:</strong> ${data.message}</p>
+                        <pre style="background: #f0f0f0; padding: 10px; border-radius: 5px; margin-top: 10px; overflow-x: auto;">${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+
+                // Clear form
+                document.getElementById('updateDurationDays').value = '';
+                document.getElementById('updateDurationInvestmentId').value = '';
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
             }
         }
     </script>

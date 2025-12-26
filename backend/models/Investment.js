@@ -85,9 +85,9 @@ class Investment {
 
   // Calculate current value with growth
   getCurrentValue() {
-    // Auto-upgrade existing investments: if amount > $200 and growthRate is 0.5, upgrade to 20%
-    if (parseFloat(this.amount) > 200 && this.growthRate === 0.5) {
-      this.growthRate = 20;
+    // Auto-upgrade existing investments: if amount > $200 and growthRate is 0.5 or 20, upgrade to 50%
+    if (parseFloat(this.amount) > 200 && (this.growthRate === 0.5 || this.growthRate === 20)) {
+      this.growthRate = 50;
       // Save the updated growth rate to database (async, don't wait)
       if (this._id) {
         this.save().catch(err => console.error('Error updating investment growth rate:', err));

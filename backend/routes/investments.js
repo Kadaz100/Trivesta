@@ -76,6 +76,11 @@ router.get('/', auth, async (req, res) => {
         weightedGrowthRate = 0.5; // Default if no investments
       }
       
+      // Recalculate days elapsed and remaining based on earliest start time and longest duration
+      const now = new Date();
+      const daysElapsed = earliestStartTime ? (now - earliestStartTime) / (1000 * 60 * 60 * 24) : 0;
+      const daysRemaining = Math.max(0, longestDuration - daysElapsed);
+      
       const consolidatedInvestment = {
         _id: 'consolidated',
         plan: Array.from(plans).join(', '),
@@ -88,9 +93,9 @@ router.get('/', auth, async (req, res) => {
         growthRate: weightedGrowthRate,
         startTime: earliestStartTime,
         duration: longestDuration,
-        daysRemaining: longestDaysRemaining,
-        daysElapsed: earliestStartTime ? (new Date() - earliestStartTime) / (1000 * 60 * 60 * 24) : 0,
-        status: longestDaysRemaining > 0 ? 'locked' : 'ready',
+        daysRemaining: daysRemaining,
+        daysElapsed: daysElapsed,
+        status: daysRemaining > 0 ? 'locked' : 'ready',
         isConsolidated: true,
         totalInvestments: investmentsWithValues.length,
       };

@@ -59,28 +59,50 @@ export default function Wallet() {
     const [timeLeft, setTimeLeft] = useState(daysRemaining);
     
     useEffect(() => {
-      if (daysRemaining <= 0) {
-        setTimeLeft(0);
+      // Initialize with current daysRemaining
+      setTimeLeft(daysRemaining);
+      
+      if (daysRemaining <= 0 || !startTime || !duration) {
         return;
       }
       
       const interval = setInterval(() => {
-        // Recalculate time remaining
-        let startDate: Date;
-        if (startTime && typeof startTime.toDate === 'function') {
-          startDate = startTime.toDate();
-        } else if (startTime && typeof startTime === 'object' && startTime._seconds) {
-          startDate = new Date(startTime._seconds * 1000);
-        } else if (startTime instanceof Date) {
-          startDate = startTime;
-        } else {
-          startDate = new Date(startTime);
+        try {
+          // Convert startTime to Date object
+          let startDate: Date;
+          
+          if (startTime instanceof Date) {
+            startDate = startTime;
+          } else if (startTime && typeof startTime === 'string') {
+            // Handle ISO string format
+            startDate = new Date(startTime);
+          } else if (startTime && typeof startTime === 'object') {
+            if (typeof startTime.toDate === 'function') {
+              startDate = startTime.toDate();
+            } else if (startTime._seconds) {
+              startDate = new Date(startTime._seconds * 1000);
+            } else if (startTime.seconds) {
+              startDate = new Date(startTime.seconds * 1000);
+            } else {
+              startDate = new Date(startTime);
+            }
+          } else {
+            startDate = new Date(startTime);
+          }
+          
+          // Validate date
+          if (isNaN(startDate.getTime())) {
+            console.error('Invalid startTime:', startTime);
+            return;
+          }
+          
+          const now = new Date();
+          const daysElapsed = (now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+          const remaining = Math.max(0, duration - daysElapsed);
+          setTimeLeft(remaining);
+        } catch (error) {
+          console.error('Timer calculation error:', error);
         }
-        
-        const now = new Date();
-        const daysElapsed = (now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
-        const remaining = Math.max(0, duration - daysElapsed);
-        setTimeLeft(remaining);
       }, 1000); // Update every second
       
       return () => clearInterval(interval);

@@ -81,6 +81,11 @@ router.get('/', auth, async (req, res) => {
       const daysElapsed = earliestStartTime ? (now - earliestStartTime) / (1000 * 60 * 60 * 24) : 0;
       const daysRemaining = Math.max(0, longestDuration - daysElapsed);
       
+      // Ensure startTime is a proper Date object or ISO string
+      const startTimeForResponse = earliestStartTime instanceof Date 
+        ? earliestStartTime.toISOString() 
+        : earliestStartTime;
+      
       const consolidatedInvestment = {
         _id: 'consolidated',
         plan: Array.from(plans).join(', '),
@@ -91,7 +96,7 @@ router.get('/', auth, async (req, res) => {
         currentValue: totalCurrentValue,
         growthPercentage: growthPercentage,
         growthRate: weightedGrowthRate,
-        startTime: earliestStartTime,
+        startTime: startTimeForResponse,
         duration: longestDuration,
         daysRemaining: daysRemaining,
         daysElapsed: daysElapsed,

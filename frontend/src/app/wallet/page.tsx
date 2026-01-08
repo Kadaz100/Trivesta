@@ -14,6 +14,7 @@ export default function Wallet() {
   const [loading, setLoading] = useState(true);
   const [referralCode, setReferralCode] = useState<string>('');
   const [referralCopied, setReferralCopied] = useState(false);
+  const [gasFee, setGasFee] = useState<number | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated()) {

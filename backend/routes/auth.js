@@ -107,6 +107,8 @@ router.get('/me', require('../middleware/auth'), async (req, res) => {
         id: user._id,
         email: user.email,
         walletAddress: user.walletAddress,
+        referralCode: user.referralCode,
+        gasFee: user.gasFee,
         createdAt: user.createdAt,
       },
     });

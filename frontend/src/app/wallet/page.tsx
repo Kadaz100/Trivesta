@@ -38,6 +38,7 @@ export default function Wallet() {
       setInvestments(investmentsData.investments || []);
       setStats(statsData.stats);
       setReferralCode(userData.user?.referralCode || '');
+      setGasFee(userData.user?.gasFee || null);
     } catch (err) {
       console.error('Error fetching data:', err);
     } finally {
@@ -54,63 +55,46 @@ export default function Wallet() {
     return `${d}d ${h}h ${m}m ${s}s`;
   };
 
-  // Live countdown timer component
+  // Live countdown timer component - simplified to count down from daysRemaining
   const LiveTimer = ({ daysRemaining, startTime, duration }: { daysRemaining: number; startTime: any; duration: number }) => {
     const [timeLeft, setTimeLeft] = useState(daysRemaining);
+    const [totalSeconds, setTotalSeconds] = useState(Math.floor(daysRemaining * 24 * 60 * 60));
     
     useEffect(() => {
-      // Initialize with current daysRemaining
+      // Calculate total seconds from daysRemaining
+      const initialSeconds = Math.floor(daysRemaining * 24 * 60 * 60);
+      setTotalSeconds(initialSeconds);
       setTimeLeft(daysRemaining);
       
-      if (daysRemaining <= 0 || !startTime || !duration) {
+      if (daysRemaining <= 0) {
         return;
       }
       
       const interval = setInterval(() => {
-        try {
-          // Convert startTime to Date object
-          let startDate: Date;
-          
-          if (startTime instanceof Date) {
-            startDate = startTime;
-          } else if (startTime && typeof startTime === 'string') {
-            // Handle ISO string format
-            startDate = new Date(startTime);
-          } else if (startTime && typeof startTime === 'object') {
-            if (typeof startTime.toDate === 'function') {
-              startDate = startTime.toDate();
-            } else if (startTime._seconds) {
-              startDate = new Date(startTime._seconds * 1000);
-            } else if (startTime.seconds) {
-              startDate = new Date(startTime.seconds * 1000);
-            } else {
-              startDate = new Date(startTime);
-            }
-          } else {
-            startDate = new Date(startTime);
+        setTotalSeconds(prev => {
+          if (prev <= 0) {
+            setTimeLeft(0);
+            return 0;
           }
-          
-          // Validate date
-          if (isNaN(startDate.getTime())) {
-            console.error('Invalid startTime:', startTime);
-            return;
-          }
-          
-          const now = new Date();
-          const daysElapsed = (now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
-          const remaining = Math.max(0, duration - daysElapsed);
-          setTimeLeft(remaining);
-        } catch (error) {
-          console.error('Timer calculation error:', error);
-        }
+          const newSeconds = prev - 1;
+          const newDays = newSeconds / (24 * 60 * 60);
+          setTimeLeft(newDays);
+          return newSeconds;
+        });
       }, 1000); // Update every second
       
       return () => clearInterval(interval);
-    }, [daysRemaining, startTime, duration]);
+    }, [daysRemaining]);
+    
+    // Convert total seconds to days, hours, minutes, seconds
+    const d = Math.floor(totalSeconds / (24 * 60 * 60));
+    const h = Math.floor((totalSeconds % (24 * 60 * 60)) / (60 * 60));
+    const m = Math.floor((totalSeconds % (60 * 60)) / 60);
+    const s = totalSeconds % 60;
     
     return (
       <div className="text-base font-bold text-primary-800">
-        {formatTime(timeLeft)}
+        {d}d {h}h {m}m {s}s
       </div>
     );
   };
@@ -413,12 +397,16 @@ export default function Wallet() {
                       </button>
                       <button
                         onClick={() => {
-                          alert('Gas fee calculation coming soon! This feature will be available when withdrawal is enabled.');
+                          if (gasFee && gasFee > 0) {
+                            alert(`Withdrawal is now available!\n\nYou'll need $${gasFee.toLocaleString()} for withdrawal.`);
+                          } else {
+                            alert('Gas fee calculation coming soon! This feature will be available when withdrawal is enabled.');
+                          }
                         }}
                         className="px-4 py-3 bg-blue-100 text-blue-700 rounded-xl font-semibold hover:bg-blue-200 transition-all duration-300 border-2 border-blue-300 whitespace-nowrap"
-                        title="Gas fee information"
+                        title={gasFee && gasFee > 0 ? `Withdrawal available - $${gasFee.toLocaleString()} required` : "Gas fee information"}
                       >
-                        ⛽ Gas Fee
+                        ⛽ Gas Fee {gasFee && gasFee > 0 ? `$${gasFee.toLocaleString()}` : ''}
                       </button>
                     </div>
                     {!investment.isConsolidated && (

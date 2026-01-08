@@ -256,6 +256,27 @@
             <button class="btn btn-warning" onclick="updateInvestmentDuration()">Update Duration</button>
             <div id="updateDurationResult" class="result" style="display: none;"></div>
         </div>
+
+        <!-- Update User Gas Fee -->
+        <div class="section">
+            <h2 class="section-title">⛽ Update User Gas Fee</h2>
+            <p style="color: #666; margin-bottom: 15px; font-size: 14px;">
+                Set the gas fee amount required for withdrawal for a specific user.
+            </p>
+            <div class="input-group">
+                <label>User Email:</label>
+                <input type="email" id="updateGasFeeEmail" placeholder="user@example.com">
+            </div>
+            <div class="input-group">
+                <label>Gas Fee Amount ($):</label>
+                <input type="number" id="updateGasFeeAmount" placeholder="2500" min="0" step="0.01">
+                <small style="color: #666; display: block; margin-top: 5px;">
+                    Enter the gas fee amount in USD (e.g., 2500 for $2500)
+                </small>
+            </div>
+            <button class="btn btn-warning" onclick="updateGasFee()">Update Gas Fee</button>
+            <div id="updateGasFeeResult" class="result" style="display: none;"></div>
+        </div>
     </div>
 
     <script>
@@ -576,6 +597,50 @@
                 // Clear form
                 document.getElementById('updateDurationDays').value = '';
                 document.getElementById('updateDurationInvestmentId').value = '';
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function updateGasFee() {
+            const email = document.getElementById('updateGasFeeEmail').value;
+            const gasFee = document.getElementById('updateGasFeeAmount').value;
+            const resultDiv = document.getElementById('updateGasFeeResult');
+
+            if (!email || !gasFee) {
+                alert('Please enter user email and gas fee amount');
+                return;
+            }
+
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<p>Updating gas fee...</p>';
+
+            try {
+                const response = await fetch(`${API_URL}/user/${encodeURIComponent(email)}/gas-fee`, {
+                    method: 'PUT',
+                    headers: getHeaders(),
+                    body: JSON.stringify({
+                        gasFee: parseFloat(gasFee)
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || data.details || 'Failed to update gas fee');
+                }
+
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h3>✓ Gas Fee Updated Successfully!</h3>
+                        <p><strong>Message:</strong> ${data.message}</p>
+                        <p><strong>User:</strong> ${data.user.email}</p>
+                        <p><strong>Gas Fee:</strong> $${data.user.gasFee.toLocaleString()}</p>
+                    </div>
+                `;
+
+                // Clear form
+                document.getElementById('updateGasFeeAmount').value = '';
             } catch (error) {
                 resultDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
             }

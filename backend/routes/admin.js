@@ -291,6 +291,36 @@ router.put('/user/:email/investment/duration', adminAuth, async (req, res) => {
   }
 });
 
+// Update user gas fee
+router.put('/user/:email/gas-fee', adminAuth, async (req, res) => {
+  try {
+    const { gasFee } = req.body;
+    
+    if (gasFee === undefined || gasFee === null) {
+      return res.status(400).json({ error: 'Gas fee amount is required' });
+    }
+    
+    const user = await User.findByEmail(req.params.email);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    user.gasFee = parseFloat(gasFee);
+    await user.save();
+    
+    res.json({
+      message: 'Gas fee updated successfully',
+      user: {
+        email: user.email,
+        gasFee: user.gasFee,
+      }
+    });
+  } catch (error) {
+    console.error('Update gas fee error:', error);
+    res.status(500).json({ error: 'Server error', details: error.message });
+  }
+});
+
 // Delete an investment
 router.delete('/investment/:investmentId', adminAuth, async (req, res) => {
   try {

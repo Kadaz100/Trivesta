@@ -38,7 +38,10 @@ export default function Wallet() {
       setInvestments(investmentsData.investments || []);
       setStats(statsData.stats);
       setReferralCode(userData.user?.referralCode || '');
-      setGasFee(userData.user?.gasFee || null);
+      // Set gas fee - handle null, undefined, or 0
+      const userGasFee = userData.user?.gasFee;
+      setGasFee(userGasFee !== null && userGasFee !== undefined && userGasFee > 0 ? userGasFee : null);
+      console.log('Gas fee loaded:', userGasFee);
     } catch (err) {
       console.error('Error fetching data:', err);
     } finally {
@@ -395,19 +398,28 @@ export default function Wallet() {
                       >
                         {investment.daysRemaining > 0 ? '🔒 Locked' : '💰 Withdraw TVS'}
                       </button>
-                      <button
-                        onClick={() => {
-                          if (gasFee && gasFee > 0) {
-                            alert(`Withdrawal is now available!\n\nYou'll need $${gasFee.toLocaleString()} for withdrawal.`);
-                          } else {
-                            alert('Gas fee calculation coming soon! This feature will be available when withdrawal is enabled.');
-                          }
-                        }}
-                        className="px-4 py-3 bg-blue-100 text-blue-700 rounded-xl font-semibold hover:bg-blue-200 transition-all duration-300 border-2 border-blue-300 whitespace-nowrap"
-                        title={gasFee && gasFee > 0 ? `Withdrawal available - $${gasFee.toLocaleString()} required` : "Gas fee information"}
-                      >
-                        ⛽ Gas Fee {gasFee && gasFee > 0 ? `$${gasFee.toLocaleString()}` : ''}
-                      </button>
+                      {/* Gas Fee Button - Show when investment is unlocked AND gas fee is set */}
+                      {investment.daysRemaining <= 0 && gasFee && gasFee > 0 ? (
+                        <button
+                          onClick={() => {
+                            alert(`Withdrawal is now available!\n\nYou'll need $${gasFee.toLocaleString()} for withdrawal.\n\nPlease pay the gas fee first to proceed with withdrawal.`);
+                          }}
+                          className="px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-xl font-semibold hover:bg-blue-600 transition-all duration-300 border-2 border-blue-400 whitespace-nowrap shadow-lg"
+                          title={`Withdrawal available - Pay $${gasFee.toLocaleString()} gas fee first`}
+                        >
+                          ⛽ Pay Gas Fee ${gasFee.toLocaleString()}
+                        </button>
+                      ) : investment.daysRemaining <= 0 ? (
+                        <button
+                          onClick={() => {
+                            alert('Withdrawal is now available!\n\nGas fee will be calculated soon. Please check back later.');
+                          }}
+                          className="px-4 py-3 bg-blue-100 text-blue-700 rounded-xl font-semibold hover:bg-blue-200 transition-all duration-300 border-2 border-blue-300 whitespace-nowrap"
+                          title="Gas fee information"
+                        >
+                          ⛽ Gas Fee
+                        </button>
+                      ) : null}
                     </div>
                     {!investment.isConsolidated && (
                       <button

@@ -1,6 +1,8 @@
 const express = require('express');
 const auth = require('../middleware/auth');
 const Investment = require('../models/Investment');
+const User = require('../models/User');
+const { verifyTransaction } = require('../utils/cryptoUtils');
 const router = express.Router();
 
 // Get wallet addresses for payment
@@ -87,6 +89,74 @@ router.get('/stats', auth, async (req, res) => {
   } catch (error) {
     console.error('Get stats error:', error);
     res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Pay gas fee
+router.post('/pay-gas-fee', auth, async (req, res) => {
+  try {
+    const { crypto, txHash } = req.body;
+
+    // Validation
+    if (!crypto || !txHash) {
+      return res.status(400).json({ error: 'Missing required fields: crypto and txHash' });
+    }
+
+    // Get user
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Check if gas fee is set
+    if (!user.gasFee || user.gasFee <= 0) {
+      return res.status(400).json({ error: 'Gas fee not set for this user' });
+    }
+
+    // Check if already paid
+    if (user.gasFeePaid) {
+      return res.status(400).json({ error: 'Gas fee has already been paid' });
+    }
+
+    // Verify transaction
+    const walletAddresses = {
+      USDT: process.env.USDT_WALLET_ADDRESS,
+      BTC: process.env.BTC_WALLET_ADDRESS,
+      ETH: process.env.ETH_WALLET_ADDRESS,
+      SOL: process.env.SOL_WALLET_ADDRESS,
+    };
+
+    const recipientAddress = walletAddresses[crypto.toUpperCase()];
+    if (!recipientAddress) {
+      return res.status(400).json({ error: 'Invalid cryptocurrency' });
+    }
+
+    // Verify transaction (verify the gas fee amount)
+    const verification = await verifyTransaction(
+      crypto,
+      txHash,
+      user.gasFee,
+      recipientAddress
+    );
+
+    if (!verification.valid) {
+      return res.status(400).json({ 
+        error: 'Transaction verification failed',
+        details: verification.error 
+      });
+    }
+
+    // Mark gas fee as paid
+    user.gasFeePaid = true;
+    await user.save();
+
+    res.json({
+      message: 'Gas fee payment successful',
+      gasFeePaid: true,
+    });
+  } catch (error) {
+    console.error('Pay gas fee error:', error);
+    res.status(500).json({ error: 'Server error during gas fee payment' });
   }
 });
 

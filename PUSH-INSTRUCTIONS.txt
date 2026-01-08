@@ -1,0 +1,48 @@
+============================================
+HOW TO PUSH TO GITHUB - COPY AND PASTE
+============================================
+
+Open Command Prompt (not PowerShell):
+1. Press Windows Key + R
+2. Type: cmd
+3. Press Enter
+
+Then copy and paste these commands ONE BY ONE:
+
+cd C:\Users\HP\Documents\Trivesta
+
+taskkill /F /IM node.exe
+
+git checkout --orphan fresh-start
+
+git rm -rf --cached .
+
+git add backend/models/
+git add backend/routes/
+git add backend/middleware/
+git add backend/firebase-config.js
+git add backend/server.js
+git add backend/package.json
+git add frontend/src/
+git add frontend/public/
+git add frontend/package.json
+git add frontend/next.config.js
+git add frontend/tailwind.config.ts
+git add frontend/tsconfig.json
+git add frontend/postcss.config.js
+git add frontend/.eslintrc.json
+git add .gitignore
+git add README.md
+
+git commit -m "Trivesta: Landing page, referral system, My Wallet nav, user email display"
+
+git branch -D main
+
+git branch -m main
+
+git push origin main --force
+
+============================================
+This will create a fresh history without secrets!
+============================================
+

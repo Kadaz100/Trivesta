@@ -1,0 +1,35 @@
+warning: in the working copy of 'frontend/src/app/invest/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/app/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/components/Navbar.tsx', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/DEPLOY_FRONTEND_FIX.md b/DEPLOY_FRONTEND_FIX.md[m
+[1mindex adb5c33..b07c5b1 100644[m
+[1m--- a/DEPLOY_FRONTEND_FIX.md[m
+[1m+++ b/DEPLOY_FRONTEND_FIX.md[m
+[36m@@ -60,3 +60,5 @@[m [mAfter redeploy, the copy button should:[m
+ [m
+ **Your frontend URL:** Check your Vercel dashboard for the exact URL[m
+ [m
+[41m+[m
+[41m+[m
+[1mdiff --git a/INVESTMENT_UPDATE_GUIDE.md b/INVESTMENT_UPDATE_GUIDE.md[m
+[1mindex 7f19175..a801476 100644[m
+[1m--- a/INVESTMENT_UPDATE_GUIDE.md[m
+[1m+++ b/INVESTMENT_UPDATE_GUIDE.md[m
+[36m@@ -103,3 +103,5 @@[m
+ [m
+ All changes are complete and ready to push to your repository. The admin panel now has an easy-to-use interface for updating investment durations![m
+ [m
+[41m+[m
+[41m+[m
+[1mdiff --git a/backend/DEPLOY-ADMIN-PANEL.md b/backend/DEPLOY-ADMIN-PANEL.md[m
+[1mindex 16663b8..b0d4b81 100644[m
+[1m--- a/backend/DEPLOY-ADMIN-PANEL.md[m
+[1m+++ b/backend/DEPLOY-ADMIN-PANEL.md[m
+[36m@@ -75,3 +75,7 @@[m [mIf the admin panel doesn't load:[m
+ - Check the backend logs for errors[m
+ - Make sure `ADMIN_PASSWORD` environment variable is set in your hosting platform[m
+ [m
+[41m+[m
+[41m+[m
+[41m+[m
+[41m+[m

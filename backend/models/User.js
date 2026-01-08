@@ -40,6 +40,7 @@ class User {
     this.walletAddress = data.walletAddress || '';
     this.referralCode = data.referralCode || '';
     this.gasFee = data.gasFee || null; // Gas fee amount in USD
+    this.gasFeePaid = data.gasFeePaid || false; // Whether gas fee has been paid
     this.createdAt = data.createdAt || new Date();
     this.investments = data.investments || [];
     this._id = data._id;
@@ -146,6 +147,7 @@ class User {
         walletAddress: this.walletAddress || '',
         referralCode: referralCodeValue,
         gasFee: this.gasFee || null,
+        gasFeePaid: this.gasFeePaid || false,
         createdAt: createdAtValue,
         investments: this.investments || [],
       };

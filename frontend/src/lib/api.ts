@@ -93,6 +93,13 @@ export const walletAPI = {
     const response = await api.get('/wallet/stats');
     return response.data;
   },
+  payGasFee: async (data: {
+    crypto: string;
+    txHash: string;
+  }) => {
+    const response = await api.post('/wallet/pay-gas-fee', data);
+    return response.data;
+  },
 };
 
 export default api;

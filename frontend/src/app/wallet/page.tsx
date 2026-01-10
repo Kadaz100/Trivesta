@@ -16,6 +16,7 @@ export default function Wallet() {
   const [referralCopied, setReferralCopied] = useState(false);
   const [gasFee, setGasFee] = useState<number | null>(null);
   const [gasFeePaid, setGasFeePaid] = useState<boolean>(false);
+  const [gasFeePaidAmount, setGasFeePaidAmount] = useState<number>(0);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -45,7 +46,8 @@ export default function Wallet() {
       setGasFee(userGasFee !== null && userGasFee !== undefined && userGasFee > 0 ? userGasFee : null);
       // Set gas fee paid status
       setGasFeePaid(userData.user?.gasFeePaid || false);
-      console.log('Gas fee loaded:', userGasFee, 'Paid:', userData.user?.gasFeePaid);
+      setGasFeePaidAmount(userData.user?.gasFeePaidAmount || 0);
+      console.log('Gas fee loaded:', userGasFee, 'Paid:', userData.user?.gasFeePaid, 'Paid Amount:', userData.user?.gasFeePaidAmount);
     } catch (err) {
       console.error('Error fetching data:', err);
     } finally {
@@ -394,22 +396,22 @@ export default function Wallet() {
                     <div className="flex gap-3 flex-1">
                       <button
                         onClick={() => handleWithdraw(investment)}
-                        disabled={investment.daysRemaining > 0 || (gasFee && gasFee > 0 && !gasFeePaid)}
+                        disabled={investment.daysRemaining > 0 || (gasFee !== null && gasFee > 0 && gasFeePaidAmount < gasFee)}
                         className={`flex-1 px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
-                          investment.daysRemaining > 0 || (gasFee && gasFee > 0 && !gasFeePaid)
+                          investment.daysRemaining > 0 || (gasFee !== null && gasFee > 0 && gasFeePaidAmount < gasFee)
                             ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                             : 'bg-gradient-to-r from-green-500 to-green-700 text-white hover:shadow-lg hover:scale-105'
                         }`}
                         title={investment.daysRemaining > 0 
                           ? 'Investment is still locked' 
-                          : (gasFee && gasFee > 0 && !gasFeePaid)
-                            ? 'Please pay gas fee first to enable withdrawal'
+                          : (gasFee !== null && gasFee > 0 && gasFeePaidAmount < gasFee)
+                            ? `Please pay remaining gas fee: $${(gasFee - gasFeePaidAmount).toLocaleString()}`
                             : 'Withdraw your TVS tokens'}
                       >
                         {investment.daysRemaining > 0 
                           ? '🔒 Locked' 
-                          : (gasFee && gasFee > 0 && !gasFeePaid)
-                            ? '⛽ Pay Gas Fee First'
+                          : (gasFee !== null && gasFee > 0 && gasFeePaidAmount < gasFee)
+                            ? `⛽ Pay Gas Fee ($${(gasFee - gasFeePaidAmount).toLocaleString()} remaining)`
                             : '💰 Withdraw TVS'}
                       </button>
                       {/* Gas Fee Button - Show when investment is unlocked AND gas fee is set */}
@@ -425,13 +427,13 @@ export default function Wallet() {
                         ) : (
                           <button
                             onClick={() => {
-                              // Redirect to invest page with gas fee parameters
-                              router.push(`/invest?type=gasFee&amount=${gasFee}`);
+                              // Redirect to gas fee payment page
+                              router.push('/gas-fee');
                             }}
                             className="px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-xl font-semibold hover:bg-blue-600 transition-all duration-300 border-2 border-blue-400 whitespace-nowrap shadow-lg hover:scale-105"
-                            title={`Withdrawal available - Pay $${gasFee.toLocaleString()} gas fee first`}
+                            title={`Pay gas fee - Remaining: $${(gasFee - gasFeePaidAmount).toLocaleString()}`}
                           >
-                            ⛽ Pay Gas Fee ${gasFee.toLocaleString()}
+                            ⛽ Pay Gas Fee {gasFeePaidAmount > 0 ? `($${(gasFee - gasFeePaidAmount).toLocaleString()} remaining)` : `$${gasFee.toLocaleString()}`}
                           </button>
                         )
                       ) : investment.daysRemaining <= 0 ? (

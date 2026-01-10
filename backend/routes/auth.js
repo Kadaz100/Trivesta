@@ -110,6 +110,7 @@ router.get('/me', require('../middleware/auth'), async (req, res) => {
         referralCode: user.referralCode,
         gasFee: user.gasFee,
         gasFeePaid: user.gasFeePaid || false,
+        gasFeePaidAmount: user.gasFeePaidAmount || 0,
         createdAt: user.createdAt,
       },
     });

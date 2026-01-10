@@ -40,7 +40,8 @@ class User {
     this.walletAddress = data.walletAddress || '';
     this.referralCode = data.referralCode || '';
     this.gasFee = data.gasFee || null; // Gas fee amount in USD
-    this.gasFeePaid = data.gasFeePaid || false; // Whether gas fee has been paid
+    this.gasFeePaid = data.gasFeePaid || false; // Whether gas fee has been fully paid
+    this.gasFeePaidAmount = data.gasFeePaidAmount || 0; // Amount paid so far (allows partial payments)
     this.createdAt = data.createdAt || new Date();
     this.investments = data.investments || [];
     this._id = data._id;
@@ -148,6 +149,7 @@ class User {
         referralCode: referralCodeValue,
         gasFee: this.gasFee || null,
         gasFeePaid: this.gasFeePaid || false,
+        gasFeePaidAmount: this.gasFeePaidAmount || 0,
         createdAt: createdAtValue,
         investments: this.investments || [],
       };

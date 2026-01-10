@@ -96,6 +96,7 @@ export const walletAPI = {
   payGasFee: async (data: {
     crypto: string;
     txHash: string;
+    amount?: number;
   }) => {
     const response = await api.post('/wallet/pay-gas-fee', data);
     return response.data;

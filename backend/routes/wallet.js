@@ -92,10 +92,10 @@ router.get('/stats', auth, async (req, res) => {
   }
 });
 
-// Pay gas fee
+// Pay gas fee (supports partial payments)
 router.post('/pay-gas-fee', auth, async (req, res) => {
   try {
-    const { crypto, txHash } = req.body;
+    const { crypto, txHash, amount } = req.body;
 
     // Validation
     if (!crypto || !txHash) {
@@ -113,9 +113,9 @@ router.post('/pay-gas-fee', auth, async (req, res) => {
       return res.status(400).json({ error: 'Gas fee not set for this user' });
     }
 
-    // Check if already paid
-    if (user.gasFeePaid) {
-      return res.status(400).json({ error: 'Gas fee has already been paid' });
+    // Check if already fully paid
+    if (user.gasFeePaid || (user.gasFeePaidAmount || 0) >= user.gasFee) {
+      return res.status(400).json({ error: 'Gas fee has already been fully paid' });
     }
 
     // Verify transaction
@@ -131,11 +131,15 @@ router.post('/pay-gas-fee', auth, async (req, res) => {
       return res.status(400).json({ error: 'Invalid cryptocurrency' });
     }
 
-    // Verify transaction (verify the gas fee amount)
+    // If amount is provided, verify against it; otherwise verify against remaining balance
+    const remainingBalance = user.gasFee - (user.gasFeePaidAmount || 0);
+    const amountToVerify = amount || remainingBalance;
+
+    // Verify transaction
     const verification = await verifyTransaction(
       crypto,
       txHash,
-      user.gasFee,
+      amountToVerify,
       recipientAddress
     );
 
@@ -146,13 +150,31 @@ router.post('/pay-gas-fee', auth, async (req, res) => {
       });
     }
 
-    // Mark gas fee as paid
-    user.gasFeePaid = true;
+    // Get the actual amount paid from verification (or use provided amount)
+    const paidAmount = verification.amount || amountToVerify;
+
+    // Update paid amount (accumulate)
+    const currentPaidAmount = user.gasFeePaidAmount || 0;
+    const newPaidAmount = currentPaidAmount + paidAmount;
+    
+    user.gasFeePaidAmount = newPaidAmount;
+    
+    // Check if fully paid
+    if (newPaidAmount >= user.gasFee) {
+      user.gasFeePaid = true;
+      user.gasFeePaidAmount = user.gasFee; // Cap at full amount
+    }
+
     await user.save();
+
+    const remaining = Math.max(0, user.gasFee - user.gasFeePaidAmount);
 
     res.json({
       message: 'Gas fee payment successful',
-      gasFeePaid: true,
+      paidAmount: paidAmount,
+      totalPaid: user.gasFeePaidAmount,
+      remaining: remaining,
+      fullyPaid: user.gasFeePaid,
     });
   } catch (error) {
     console.error('Pay gas fee error:', error);

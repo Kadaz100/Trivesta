@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import { walletAPI, investmentAPI } from '@/lib/api';
 import { isAuthenticated } from '@/lib/auth';
@@ -15,7 +15,6 @@ const QRCodeSVG = dynamic(() => import('qrcode.react').then((mod) => mod.QRCodeS
 
 export default function Invest() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [plans, setPlans] = useState<any[]>([]);
   const [addresses, setAddresses] = useState<any>({});
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
@@ -28,7 +27,6 @@ export default function Invest() {
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [isGasFeePayment, setIsGasFeePayment] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -36,16 +34,7 @@ export default function Invest() {
       return;
     }
     fetchData();
-    
-    // Check if this is a gas fee payment
-    const type = searchParams.get('type');
-    const amount = searchParams.get('amount');
-    if (type === 'gasFee' && amount) {
-      setIsGasFeePayment(true);
-      setCustomAmount(amount);
-      setSelectedPlan('custom'); // Use custom plan for gas fee
-    }
-  }, [router, searchParams]);, [router, searchParams]);
+  }, [router]);
 
   const fetchData = async () => {
     try {
@@ -81,20 +70,8 @@ export default function Invest() {
   };
 
   const handleInvest = async () => {
-    if (!selectedCrypto || !txHash) {
+    if (!selectedPlan || !selectedCrypto || !txHash) {
       setError('Please fill in all fields');
-      return;
-    }
-
-    // For gas fee payment, amount is required
-    if (isGasFeePayment && !customAmount) {
-      setError('Please enter the gas fee amount');
-      return;
-    }
-
-    // For regular investment, plan is required
-    if (!isGasFeePayment && !selectedPlan) {
-      setError('Please select an investment plan');
       return;
     }
 
@@ -102,46 +79,29 @@ export default function Invest() {
     setError('');
 
     try {
-      if (isGasFeePayment) {
-        // Handle gas fee payment
-        await walletAPI.payGasFee({
-          crypto: selectedCrypto,
-          txHash,
-        });
+      const plan = plans.find((p) => p.id === selectedPlan);
+      const amount = customAmount ? parseFloat(customAmount) : plan?.minAmount || 100;
+      // Custom plans default to 90 days (3 months), otherwise use plan duration
+      const duration = selectedPlan === 'custom' ? 90 : plan?.duration || 30;
 
-        // Show success animation
-        setShowSuccess(true);
-        
-        // Redirect after 3 seconds
-        setTimeout(() => {
-          router.push('/wallet');
-        }, 3000);
-      } else {
-        // Handle regular investment
-        const plan = plans.find((p) => p.id === selectedPlan);
-        const amount = customAmount ? parseFloat(customAmount) : plan?.minAmount || 100;
-        // Custom plans default to 90 days (3 months), otherwise use plan duration
-        const duration = selectedPlan === 'custom' ? 90 : plan?.duration || 30;
+      await investmentAPI.create({
+        plan: selectedPlan || 'custom',
+        amount,
+        crypto: selectedCrypto,
+        txHash,
+        duration,
+      });
 
-        await investmentAPI.create({
-          plan: selectedPlan,
-          amount,
-          crypto: selectedCrypto,
-          txHash,
-          duration,
-        });
-
-        // Show success animation
-        setShowSuccess(true);
-        
-        // Redirect after 3 seconds
-        setTimeout(() => {
-          router.push('/wallet');
-        }, 3000);
-      }
+      // Show success animation
+      setShowSuccess(true);
+      
+      // Redirect after 3 seconds
+      setTimeout(() => {
+        router.push('/wallet');
+      }, 3000);
     } catch (err: any) {
-      console.error(isGasFeePayment ? 'Gas fee payment error:' : 'Investment error:', err);
-      const errorMessage = err.response?.data?.error || err.response?.data?.details || err.message || (isGasFeePayment ? 'Gas fee payment failed' : 'Investment failed');
+      console.error('Investment error:', err);
+      const errorMessage = err.response?.data?.error || err.response?.data?.details || err.message || 'Investment failed';
       const details = err.response?.data?.details ? ` - ${err.response.data.details}` : '';
       setError(`${errorMessage}${details}`);
     } finally {
@@ -249,9 +209,7 @@ export default function Invest() {
                 transition={{ delay: 0.7 }}
                 className="text-xl text-gray-600"
               >
-                {isGasFeePayment 
-                  ? 'Your gas fee payment has been submitted successfully!' 
-                  : 'Your investment has been submitted successfully!'}
+                Your investment has been submitted successfully!
               </motion.p>
               <motion.div
                 initial={{ scale: 0 }}
@@ -276,16 +234,13 @@ export default function Invest() {
           className="max-w-6xl mx-auto"
         >
           <h1 className="text-5xl font-bold text-center mb-4 bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent">
-            {isGasFeePayment ? 'Pay Gas Fee' : 'Choose Your Investment Plan'}
+            Choose Your Investment Plan
           </h1>
           <p className="text-center text-gray-600 mb-12 text-lg">
-            {isGasFeePayment 
-              ? `Pay $${customAmount ? parseFloat(customAmount).toLocaleString() : '0'} gas fee to enable withdrawal`
-              : 'Select a plan or create a custom investment'}
+            Select a plan or create a custom investment
           </p>
 
-          {/* Investment Plans - Hide for gas fee payment */}
-          {!isGasFeePayment && (
+          {/* Investment Plans */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             {plans.map((plan, index) => (
               <motion.div
@@ -314,7 +269,6 @@ export default function Invest() {
               </motion.div>
             ))}
           </div>
-          )}
 
           {/* Custom Investment */}
           <motion.div
@@ -323,11 +277,9 @@ export default function Invest() {
             className="bg-white p-8 rounded-2xl border-2 border-primary-100 shadow-lg mb-8"
           >
             <h2 className="text-2xl font-bold text-primary-800 mb-6">
-              {isGasFeePayment 
-                ? 'Gas Fee Payment' 
-                : selectedPlan && selectedPlan !== 'custom' 
-                  ? `${selectedPlanData?.name} Investment` 
-                  : 'Custom Investment'}
+              {selectedPlan && selectedPlan !== 'custom' 
+                ? `${selectedPlanData?.name} Investment` 
+                : 'Custom Investment'}
             </h2>
             
             {selectedPlan && selectedPlan !== 'custom' && (
@@ -342,41 +294,23 @@ export default function Invest() {
               </div>
             )}
             
-            {!isGasFeePayment && (
-              <p className="text-gray-600 mb-4">
-                {selectedPlan && selectedPlan !== 'custom'
-                  ? `Enter your ${selectedPlanData?.name} investment amount`
-                  : 'Enter your investment amount (Duration: 3 months)'}
-              </p>
-            )}
-            
-            {isGasFeePayment && (
-              <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl mb-4">
-                <p className="text-blue-800 font-semibold">
-                  ⛽ Gas Fee Payment Required
-                </p>
-                <p className="text-sm text-blue-700 mt-1">
-                  You need to pay ${customAmount ? parseFloat(customAmount).toLocaleString() : '0'} gas fee to enable withdrawal.
-                </p>
-              </div>
-            )}
+            <p className="text-gray-600 mb-4">
+              {selectedPlan && selectedPlan !== 'custom'
+                ? `Enter your ${selectedPlanData?.name} investment amount`
+                : 'Enter your investment amount (Duration: 3 months)'}
+            </p>
             
             <div className="max-w-md">
               <div>
-                <label className="block text-gray-700 font-medium mb-2">
-                  {isGasFeePayment ? 'Gas Fee Amount ($)' : 'Amount ($)'}
-                </label>
+                <label className="block text-gray-700 font-medium mb-2">Amount ($)</label>
                 <input
                   type="number"
                   value={customAmount}
                   onChange={(e) => setCustomAmount(e.target.value)}
-                  placeholder={isGasFeePayment 
-                    ? 'Gas fee amount'
-                    : selectedPlan && selectedPlan !== 'custom' 
-                      ? `Min: $${selectedPlanData?.minAmount.toLocaleString()}`
-                      : 'Enter amount'}
-                  disabled={isGasFeePayment}
-                  className="w-full px-4 py-3 border-2 border-primary-100 rounded-xl focus:outline-none focus:border-primary-600 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  placeholder={selectedPlan && selectedPlan !== 'custom' 
+                    ? `Min: $${selectedPlanData?.minAmount.toLocaleString()}`
+                    : 'Enter amount'}
+                  className="w-full px-4 py-3 border-2 border-primary-100 rounded-xl focus:outline-none focus:border-primary-600 transition-all"
                 />
               </div>
             </div>
@@ -393,7 +327,7 @@ export default function Invest() {
               </button>
             )}
             
-            {!isGasFeePayment && (!selectedPlan || selectedPlan === 'custom') && (
+            {(!selectedPlan || selectedPlan === 'custom') && (
               <button
                 onClick={() => {
                   setSelectedPlan('custom');
@@ -408,7 +342,7 @@ export default function Invest() {
 
           {/* Payment Section */}
           <AnimatePresence>
-            {(selectedPlan || isGasFeePayment) && (
+            {selectedPlan && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -464,7 +398,7 @@ export default function Invest() {
                         <li>Scan the QR code or copy the address below</li>
                         <li>Send the exact amount from your wallet</li>
                         <li>Copy the transaction hash from your wallet</li>
-                        <li>Paste it below and click {isGasFeePayment ? 'Complete Gas Fee Payment' : 'Complete Investment'}</li>
+                        <li>Paste it below and click Complete Investment</li>
                       </ol>
                     </div>
 
@@ -582,11 +516,7 @@ export default function Invest() {
                       disabled={loading || !txHash}
                       className="w-full bg-gradient-to-r from-primary-600 to-primary-800 text-white py-4 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {loading 
-                        ? 'Processing...' 
-                        : isGasFeePayment 
-                          ? 'Complete Gas Fee Payment' 
-                          : 'Complete Investment'}
+                      {loading ? 'Processing...' : 'Complete Investment'}
                     </button>
                   </div>
                 )}

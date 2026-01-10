@@ -5,6 +5,11 @@ const getBaseUrl = () => {
     return process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, '');
   }
 
+  // For local development, always use localhost:5000
+  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+    return 'http://localhost:5000/api';
+  }
+
   if (typeof window !== 'undefined') {
     return `${window.location.origin.replace(/\/$/, '')}/api`;
   }

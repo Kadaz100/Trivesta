@@ -24,32 +24,32 @@ router.get('/plans', (req, res) => {
       {
         id: 'basic',
         name: 'Basic',
-        minAmount: 100,
-        maxAmount: 1000,
+        minAmount: 500,
+        maxAmount: 5000,
         duration: 30,
         label: null,
       },
       {
         id: 'premium',
         name: 'Premium',
-        minAmount: 1500,
-        maxAmount: 5000,
+        minAmount: 5000,
+        maxAmount: 20000,
         duration: 90,
         label: 'Most Popular',
       },
       {
         id: 'exclusive',
         name: 'Exclusive',
-        minAmount: 10000,
-        maxAmount: 35000,
+        minAmount: 20000,
+        maxAmount: 50000,
         duration: 180,
         label: null,
       },
       {
         id: 'presale',
         name: 'Presale',
-        minAmount: 3000,
-        maxAmount: 100000,
+        minAmount: 50000,
+        maxAmount: 500000,
         duration: 365,
         label: 'Best Value',
       },
@@ -157,6 +157,11 @@ router.post('/pay-gas-fee', auth, async (req, res) => {
     const currentPaidAmount = user.gasFeePaidAmount || 0;
     const newPaidAmount = currentPaidAmount + paidAmount;
     
+    console.log('[Gas Fee Payment] Current paid:', currentPaidAmount);
+    console.log('[Gas Fee Payment] Paid amount:', paidAmount);
+    console.log('[Gas Fee Payment] New total:', newPaidAmount);
+    console.log('[Gas Fee Payment] Total gas fee:', user.gasFee);
+    
     user.gasFeePaidAmount = newPaidAmount;
     
     // Check if fully paid
@@ -168,6 +173,10 @@ router.post('/pay-gas-fee', auth, async (req, res) => {
     await user.save();
 
     const remaining = Math.max(0, user.gasFee - user.gasFeePaidAmount);
+
+    console.log('[Gas Fee Payment] After save - totalPaid:', user.gasFeePaidAmount);
+    console.log('[Gas Fee Payment] After save - remaining:', remaining);
+    console.log('[Gas Fee Payment] After save - fullyPaid:', user.gasFeePaid);
 
     res.json({
       message: 'Gas fee payment successful',

@@ -40,10 +40,6 @@ export default function GasFeePayment() {
         walletAPI.getAddresses(),
         authAPI.getMe(),
       ]);
-      console.log('[Gas Fee] Fetched user data:', userData.user);
-      console.log('[Gas Fee] Gas Fee:', userData.user?.gasFee);
-      console.log('[Gas Fee] Gas Fee Paid Amount:', userData.user?.gasFeePaidAmount);
-      console.log('[Gas Fee] Gas Fee Paid:', userData.user?.gasFeePaid);
       setAddresses(addressesData.addresses || {});
       setGasFee(userData.user?.gasFee || null);
       setGasFeePaidAmount(userData.user?.gasFeePaidAmount || 0);
@@ -78,13 +74,8 @@ export default function GasFeePayment() {
       // Show success
       setShowSuccess(true);
       
-      // Update paid amount immediately
-      console.log('[Gas Fee] Payment response:', response);
-      console.log('[Gas Fee] Total paid:', response.totalPaid);
-      console.log('[Gas Fee] Remaining:', response.remaining);
+      // Update paid amount immediately and refresh data
       setGasFeePaidAmount(response.totalPaid || 0);
-      
-      // Refresh data from backend immediately to ensure sync
       await fetchData();
       
       // Redirect after 3 seconds if fully paid, otherwise stay on page
@@ -110,12 +101,6 @@ export default function GasFeePayment() {
   };
 
   const remainingBalance = gasFee ? Math.max(0, gasFee - gasFeePaidAmount) : 0;
-  
-  // Debug logging
-  console.log('[Gas Fee Render] Gas Fee:', gasFee);
-  console.log('[Gas Fee Render] Paid Amount:', gasFeePaidAmount);
-  console.log('[Gas Fee Render] Remaining Balance:', remainingBalance);
-  
   const selectedAddress = selectedCrypto 
     ? (addresses[selectedCrypto] || addresses[selectedCrypto.toUpperCase()] || addresses[selectedCrypto.toLowerCase()] || '')
     : '';

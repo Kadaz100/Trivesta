@@ -131,15 +131,14 @@ router.post('/pay-gas-fee', auth, async (req, res) => {
       return res.status(400).json({ error: 'Invalid cryptocurrency' });
     }
 
-    // If amount is provided, verify against it; otherwise verify against remaining balance
+    // For partial payments, don't pass expected amount - accept whatever was sent
     const remainingBalance = user.gasFee - (user.gasFeePaidAmount || 0);
-    const amountToVerify = amount || remainingBalance;
 
-    // Verify transaction
+    // Verify transaction WITHOUT amount check (to allow partial payments)
     const verification = await verifyTransaction(
       crypto,
       txHash,
-      amountToVerify,
+      null, // Don't check amount - accept any partial payment
       recipientAddress
     );
 
@@ -150,8 +149,23 @@ router.post('/pay-gas-fee', auth, async (req, res) => {
       });
     }
 
-    // Get the actual amount paid from verification (or use provided amount)
-    const paidAmount = verification.amount || amountToVerify;
+    // Get the actual amount paid from verification
+    const paidAmount = verification.amount;
+    
+    if (!paidAmount || paidAmount <= 0) {
+      return res.status(400).json({ 
+        error: 'Invalid payment amount',
+        details: 'Transaction amount must be greater than 0'
+      });
+    }
+    
+    // Ensure payment doesn't exceed remaining balance
+    if (paidAmount > remainingBalance) {
+      return res.status(400).json({ 
+        error: 'Payment exceeds remaining balance',
+        details: `You sent $${paidAmount.toFixed(2)} but only $${remainingBalance.toFixed(2)} is needed`
+      });
+    }
 
     // Update paid amount (accumulate)
     const currentPaidAmount = user.gasFeePaidAmount || 0;

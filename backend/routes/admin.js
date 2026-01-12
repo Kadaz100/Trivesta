@@ -321,6 +321,53 @@ router.put('/user/:email/gas-fee', adminAuth, async (req, res) => {
   }
 });
 
+// Manually update gas fee paid amount (admin override)
+router.put('/user/:email/gas-fee-paid', adminAuth, async (req, res) => {
+  try {
+    const { paidAmount } = req.body;
+    
+    if (paidAmount === undefined || paidAmount === null || paidAmount <= 0) {
+      return res.status(400).json({ error: 'Valid paid amount is required' });
+    }
+    
+    const user = await User.findByEmail(req.params.email);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    if (!user.gasFee || user.gasFee <= 0) {
+      return res.status(400).json({ error: 'User does not have a gas fee set' });
+    }
+    
+    // Add the paid amount to existing amount (accumulate)
+    const currentPaid = user.gasFeePaidAmount || 0;
+    const newPaidAmount = currentPaid + parseFloat(paidAmount);
+    
+    // Cap at total gas fee
+    user.gasFeePaidAmount = Math.min(newPaidAmount, user.gasFee);
+    
+    // Mark as fully paid if reached the total
+    if (user.gasFeePaidAmount >= user.gasFee) {
+      user.gasFeePaid = true;
+    }
+    
+    await user.save();
+    
+    res.json({
+      message: 'Gas fee paid amount updated successfully',
+      user: {
+        email: user.email,
+        gasFee: user.gasFee,
+        gasFeePaidAmount: user.gasFeePaidAmount,
+        gasFeePaid: user.gasFeePaid,
+      }
+    });
+  } catch (error) {
+    console.error('Update gas fee paid error:', error);
+    res.status(500).json({ error: 'Server error', details: error.message });
+  }
+});
+
 // Delete an investment
 router.delete('/investment/:investmentId', adminAuth, async (req, res) => {
   try {

@@ -282,20 +282,28 @@
         <div class="section">
             <h2 class="section-title">💳 Update Gas Fee Paid Amount (Manual)</h2>
             <p style="color: #666; margin-bottom: 15px; font-size: 14px;">
-                Manually update how much of the gas fee a user has paid. Useful for manual verification.
+                Manually update how much of the gas fee a user has paid. Choose to ADD to existing amount or SET total paid amount.
             </p>
             <div class="input-group">
                 <label>User Email:</label>
                 <input type="email" id="updateGasFeePaidEmail" placeholder="user@example.com">
             </div>
             <div class="input-group">
-                <label>Amount Paid ($):</label>
+                <label>Action:</label>
+                <select id="updateGasFeePaidAction">
+                    <option value="add">Add to existing paid amount</option>
+                    <option value="set">Set total paid amount (replace)</option>
+                    <option value="setRemaining">Set remaining amount (calculate paid)</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Amount ($):</label>
                 <input type="number" id="updateGasFeePaidAmount" placeholder="1250" min="0" step="0.01">
-                <small style="color: #666; display: block; margin-top: 5px;">
-                    Enter the amount the user has paid (will be added to existing paid amount)
+                <small id="updateGasFeePaidHelp" style="color: #666; display: block; margin-top: 5px;">
+                    Enter the amount to add to what user has already paid
                 </small>
             </div>
-            <button class="btn btn-success" onclick="updateGasFeePaid()">Add to Paid Amount</button>
+            <button class="btn btn-success" onclick="updateGasFeePaid()">Update Paid Amount</button>
             <div id="updateGasFeePaidResult" class="result" style="display: none;"></div>
         </div>
     </div>
@@ -667,13 +675,28 @@
             }
         }
 
+        // Update help text based on action selection
+        document.getElementById('updateGasFeePaidAction')?.addEventListener('change', function() {
+            const helpText = document.getElementById('updateGasFeePaidHelp');
+            const action = this.value;
+            
+            if (action === 'add') {
+                helpText.textContent = 'Enter the amount to add to what user has already paid';
+            } else if (action === 'set') {
+                helpText.textContent = 'Enter the TOTAL amount the user has paid (replaces current paid amount)';
+            } else if (action === 'setRemaining') {
+                helpText.textContent = 'Enter the REMAINING amount needed (we will calculate paid amount)';
+            }
+        });
+
         async function updateGasFeePaid() {
             const email = document.getElementById('updateGasFeePaidEmail').value;
-            const paidAmount = document.getElementById('updateGasFeePaidAmount').value;
+            const amount = document.getElementById('updateGasFeePaidAmount').value;
+            const action = document.getElementById('updateGasFeePaidAction').value;
             const resultDiv = document.getElementById('updateGasFeePaidResult');
 
-            if (!email || !paidAmount) {
-                alert('Please enter user email and paid amount');
+            if (!email || !amount) {
+                alert('Please enter user email and amount');
                 return;
             }
 
@@ -685,7 +708,8 @@
                     method: 'PUT',
                     headers: getHeaders(),
                     body: JSON.stringify({
-                        paidAmount: parseFloat(paidAmount)
+                        amount: parseFloat(amount),
+                        action: action
                     })
                 });
 

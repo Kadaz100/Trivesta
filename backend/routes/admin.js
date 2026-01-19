@@ -324,10 +324,10 @@ router.put('/user/:email/gas-fee', adminAuth, async (req, res) => {
 // Manually update gas fee paid amount (admin override)
 router.put('/user/:email/gas-fee-paid', adminAuth, async (req, res) => {
   try {
-    const { paidAmount } = req.body;
+    const { amount, action } = req.body;
     
-    if (paidAmount === undefined || paidAmount === null || paidAmount <= 0) {
-      return res.status(400).json({ error: 'Valid paid amount is required' });
+    if (amount === undefined || amount === null) {
+      return res.status(400).json({ error: 'Amount is required' });
     }
     
     const user = await User.findByEmail(req.params.email);
@@ -339,9 +339,40 @@ router.put('/user/:email/gas-fee-paid', adminAuth, async (req, res) => {
       return res.status(400).json({ error: 'User does not have a gas fee set' });
     }
     
-    // Add the paid amount to existing amount (accumulate)
-    const currentPaid = user.gasFeePaidAmount || 0;
-    const newPaidAmount = currentPaid + parseFloat(paidAmount);
+    let newPaidAmount;
+    const inputAmount = parseFloat(amount);
+    
+    // Handle different actions
+    switch (action) {
+      case 'set':
+        // Set the total paid amount directly (replace current)
+        newPaidAmount = inputAmount;
+        console.log(`[Admin] Setting paid amount to: ${newPaidAmount}`);
+        break;
+        
+      case 'setRemaining':
+        // Calculate paid amount based on remaining amount
+        // If remaining is 1850 and total fee is 2000, paid = 2000 - 1850 = 150
+        newPaidAmount = user.gasFee - inputAmount;
+        console.log(`[Admin] Remaining set to ${inputAmount}, calculated paid: ${newPaidAmount}`);
+        break;
+        
+      case 'add':
+      default:
+        // Add to existing paid amount (accumulate)
+        const currentPaid = user.gasFeePaidAmount || 0;
+        newPaidAmount = currentPaid + inputAmount;
+        console.log(`[Admin] Adding ${inputAmount} to current ${currentPaid} = ${newPaidAmount}`);
+        break;
+    }
+    
+    // Validate that paid amount is not negative
+    if (newPaidAmount < 0) {
+      return res.status(400).json({ 
+        error: 'Invalid amount',
+        details: `Calculated paid amount (${newPaidAmount}) cannot be negative. Remaining amount is larger than total gas fee.`
+      });
+    }
     
     // Cap at total gas fee
     user.gasFeePaidAmount = Math.min(newPaidAmount, user.gasFee);
@@ -349,9 +380,15 @@ router.put('/user/:email/gas-fee-paid', adminAuth, async (req, res) => {
     // Mark as fully paid if reached the total
     if (user.gasFeePaidAmount >= user.gasFee) {
       user.gasFeePaid = true;
+    } else {
+      user.gasFeePaid = false;
     }
     
     await user.save();
+    
+    const remaining = user.gasFee - user.gasFeePaidAmount;
+    
+    console.log(`[Admin] Updated user ${user.email}: Gas Fee: ${user.gasFee}, Paid: ${user.gasFeePaidAmount}, Remaining: ${remaining}`);
     
     res.json({
       message: 'Gas fee paid amount updated successfully',
